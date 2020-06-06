@@ -11,6 +11,21 @@ provider "azurerm" {
     tenant_id       = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 
+# Cloud init config
+data "template_file" "cloudconfig" {
+  template = file("${PATH}/cloud-init.txt")
+}
+
+data "template_cloudinit_config" "config" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    content_type = "text/cloud-config"
+    content      = data.template_file.cloudconfig.rendered
+  }
+}
+
 # Create a resource group if it doesn't exist
 resource "azurerm_resource_group" "myterraformgroup" {
     name     = "newResourceGroup"
@@ -147,7 +162,8 @@ resource "azurerm_linux_virtual_machine" "myterraformvm" {
     computer_name  = "myvm"
     admin_username = "azureuser"
     disable_password_authentication = true
-        
+    custom_data = data.template_cloudinit_config.config.rendered    
+    
     admin_ssh_key {
         username       = "azureuser"
         public_key     = file("/home/luca/.ssh/id_rsa.pub")
