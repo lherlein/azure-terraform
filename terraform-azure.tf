@@ -5,15 +5,15 @@ provider "azurerm" {
     version = "~>2.0"
     features {}
 
-    subscription_id = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    client_id       = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    client_secret   = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    tenant_id       = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    subscription_id = var.subscription_id
+    client_id       = var.client_id
+    client_secret   = var.client_secret
+    tenant_id       = var.tenant_id
 }
 
 # Cloud init config
 data "template_file" "cloudconfig" {
-  template = file("${PATH}/cloud-init.txt")
+  template = file("/home/luca/azure-terraform/cloud-init.txt")
 }
 
 data "template_cloudinit_config" "config" {
@@ -25,6 +25,8 @@ data "template_cloudinit_config" "config" {
     content      = data.template_file.cloudconfig.rendered
   }
 }
+
+
 
 # Create a resource group if it doesn't exist
 resource "azurerm_resource_group" "myterraformgroup" {
@@ -140,11 +142,12 @@ resource "azurerm_storage_account" "mystorageaccount" {
 
 # Create virtual machine
 resource "azurerm_linux_virtual_machine" "myterraformvm" {
-    name                  = "myVM"
+    name                  = var.vm_name
     location              = "eastus"
     resource_group_name   = azurerm_resource_group.myterraformgroup.name
     network_interface_ids = [azurerm_network_interface.myterraformnic.id]
     size                  = "Standard_DS1_v2"
+
 
     os_disk {
         name              = "myOsDisk"
@@ -158,14 +161,16 @@ resource "azurerm_linux_virtual_machine" "myterraformvm" {
         sku       = "16.04.0-LTS"
         version   = "latest"
     }
+        
 
-    computer_name  = "myvm"
-    admin_username = "azureuser"
+    admin_username = var.admin_username
+    computer_name  = var.vm_name
     disable_password_authentication = true
-    custom_data = data.template_cloudinit_config.config.rendered    
-    
+    custom_data = data.template_cloudinit_config.config.rendered
+
+
     admin_ssh_key {
-        username       = "azureuser"
+        username       = var.admin_username
         public_key     = file("/home/luca/.ssh/id_rsa.pub")
     }
 
